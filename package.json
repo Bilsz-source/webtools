@@ -1,9 +1,0 @@
-{
-  "name": "gtps-control-panel",
-  "version": "1.0.0",
-  "description": "GTPS Cloud Web Control Panel for Growtopia Server",
-  "private": true,
-  "scripts": {
-    "build": "echo Static build ready"
-  }
-}
