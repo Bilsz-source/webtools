@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "name": "pyrock-gtps-control",
+  "name": "pyrock-server",
   "builds": [
     {
       "src": "api/index.js",
