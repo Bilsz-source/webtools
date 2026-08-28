@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PYROCK | Server Control Panel</title>
+  <link rel="stylesheet" href="css/gtps-cloud.css">
+  <link rel="shortcut icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2379c2de'><rect width='20' height='20' rx='4'/></svg>">
+</head>
+<body>
+
+  <!-- Top Navbar -->
+  <div class="gt-navbar-wrapper">
+    <header class="gt-navbar">
+      <div class="gt-brand" onclick="switchTab('dashboard')">
+        <div class="gt-brand-logo">🌐</div>
+        <div>
+          <div class="gt-brand-text">PYROCK</div>
+          <div class="gt-brand-sub">Server Control Suite</div>
+        </div>
+      </div>
+
+      <!-- Quick Status & Controls -->
+      <div class="gt-nav-actions">
+        <div id="navStatusBadge" class="gt-status-badge offline">
+          <span class="pulse-dot"></span>
+          <span id="navStatusText">CHECKING...</span>
+        </div>
+
+        <div style="display: flex; gap: 6px;">
+          <button class="gt-btn gt-btn-green gt-btn-sm" onclick="serverAction('start')" title="Start Server">▶ START</button>
+          <button class="gt-btn gt-btn-red gt-btn-sm" onclick="serverAction('stop')" title="Stop Server">■ STOP</button>
+          <button class="gt-btn gt-btn-yellow gt-btn-sm" onclick="serverAction('restart')" title="Restart Server">↻ REBOOT</button>
+        </div>
+
+        <button class="gt-btn gt-btn-tab gt-btn-sm" onclick="toggleTheme()" title="Toggle Theme">🌓 THEME</button>
+      </div>
+    </header>
+  </div>
+
+  <!-- Main Container -->
+  <div class="gt-app-container">
+    
+    <!-- Sidebar -->
+    <aside class="gt-sidebar">
+      <div class="gt-sidebar-card">
+        <nav style="display: flex; flex-direction: column; gap: 4px;">
+          <div class="gt-nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
+            <span>📊</span> Dashboard
+          </div>
+          <div class="gt-nav-item" data-tab="console" onclick="switchTab('console')">
+            <span>💻</span> Live Console
+          </div>
+          <div class="gt-nav-item" data-tab="players" onclick="switchTab('players')">
+            <span>👥</span> Players
+            <span class="badge" id="sidePlayerBadge">0</span>
+          </div>
+          <div class="gt-nav-item" data-tab="worlds" onclick="switchTab('worlds')">
+            <span>🌍</span> Worlds
+            <span class="badge" id="sideWorldBadge">0</span>
+          </div>
+          <div class="gt-nav-item" data-tab="guilds" onclick="switchTab('guilds')">
+            <span>🛡️</span> Guilds / Clans
+            <span class="badge" id="sideGuildBadge">0</span>
+          </div>
+          <div class="gt-nav-item" data-tab="scripts" onclick="switchTab('scripts')">
+            <span>📜</span> Lua Scripts
+          </div>
+          <div class="gt-nav-item" data-tab="configs" onclick="switchTab('configs')">
+            <span>⚙️</span> Server Config
+          </div>
+          <div class="gt-nav-item" data-tab="connection" onclick="switchTab('connection')">
+            <span>🔌</span> Client Connect
+          </div>
+          <div class="gt-nav-item" data-tab="backups" onclick="switchTab('backups')">
+            <span>💾</span> Backups
+          </div>
+          <div class="gt-nav-item" data-tab="security" onclick="switchTab('security')">
+            <span>🔒</span> Security & Bans
+          </div>
+        </nav>
+      </div>
+
+      <!-- Quick Server Info Box -->
+      <div class="gt-sidebar-card" style="margin-top: 8px;">
+        <div style="font-size: 0.8rem; color: var(--gt-text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">
+          Server Endpoint
+        </div>
+        <div style="background: rgba(0,0,0,0.3); padding: 8px 10px; border-radius: 6px; border: 2px solid var(--gt-border-fade-20); font-family: var(--font-mono); font-size: 0.82rem; margin-bottom: 8px; word-break: break-all;" id="sidebarIpDisplay">
+          127.0.0.1:55000
+        </div>
+        <button class="gt-btn gt-btn-sm" style="width: 100%;" onclick="copySidebarEndpoint()">📋 Copy Host IP</button>
+      </div>
+    </aside>
+
+    <!-- Content Tabs -->
+    <main class="gt-content">
+
+      <!-- TAB: DASHBOARD -->
+      <section id="tab-dashboard" class="tab-pane active">
+        
+        <!-- Live Metrics Grid -->
+        <div class="gt-stats-grid">
+          <div class="gt-stat-card">
+            <div class="gt-stat-icon">🎮</div>
+            <div class="gt-stat-info">
+              <span class="gt-stat-label">Online Players</span>
+              <span class="gt-stat-value" id="dashOnlinePlayers">0</span>
+            </div>
+          </div>
+          <div class="gt-stat-card">
+            <div class="gt-stat-icon">👥</div>
+            <div class="gt-stat-info">
+              <span class="gt-stat-label">Total Accounts</span>
+              <span class="gt-stat-value" id="dashTotalPlayers">0</span>
+            </div>
+          </div>
+          <div class="gt-stat-card">
+            <div class="gt-stat-icon">🌍</div>
+            <div class="gt-stat-info">
+              <span class="gt-stat-label">Total Worlds</span>
+              <span class="gt-stat-value" id="dashTotalWorlds">0</span>
+            </div>
+          </div>
+          <div class="gt-stat-card">
+            <div class="gt-stat-icon">🛡️</div>
+            <div class="gt-stat-info">
+              <span class="gt-stat-label">Active Guilds</span>
+              <span class="gt-stat-value" id="dashTotalGuilds">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Server Controls & System Info -->
+        <div class="gt-panel" style="margin-top: 16px;">
+          <div class="gt-panel-title">
+            <span>⚡ Server Power Controls</span>
+          </div>
+          
+          <div class="gt-control-bar">
+            <button class="gt-btn gt-btn-green" onclick="serverAction('start')">
+              ▶ Launch Server.exe
+            </button>
+            <button class="gt-btn gt-btn-red" onclick="serverAction('stop')">
+              ■ Graceful Shutdown
+            </button>
+            <button class="gt-btn gt-btn-yellow" onclick="serverAction('restart')">
+              ↻ Quick Restart
+            </button>
+            <button class="gt-btn gt-btn-purple" onclick="serverAction('kill')">
+              ⚡ Force Kill PID
+            </button>
+            <button class="gt-btn gt-btn-tab" onclick="triggerManualBackup()">
+              💾 Instant Backup
+            </button>
+          </div>
+
+          <!-- System Resource Specs -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; margin-top: 20px;">
+            <div style="background: var(--gt-border-fade-12); padding: 14px; border-radius: 8px; border: 2px solid var(--gt-border-fade-20);">
+              <div style="font-size: 0.75rem; color: var(--gt-text-muted); text-transform: uppercase;">CPU Cores</div>
+              <div style="font-size: 1.1rem; font-weight: 700;" id="sysCpuModel">-</div>
+            </div>
+            <div style="background: var(--gt-border-fade-12); padding: 14px; border-radius: 8px; border: 2px solid var(--gt-border-fade-20);">
+              <div style="font-size: 0.75rem; color: var(--gt-text-muted); text-transform: uppercase;">RAM Usage</div>
+              <div style="font-size: 1.1rem; font-weight: 700;" id="sysRamUsage">-</div>
+            </div>
+            <div style="background: var(--gt-border-fade-12); padding: 14px; border-radius: 8px; border: 2px solid var(--gt-border-fade-20);">
+              <div style="font-size: 0.75rem; color: var(--gt-text-muted); text-transform: uppercase;">Platform / OS</div>
+              <div style="font-size: 1.1rem; font-weight: 700;" id="sysPlatform">-</div>
+            </div>
+            <div style="background: var(--gt-border-fade-12); padding: 14px; border-radius: 8px; border: 2px solid var(--gt-border-fade-20);">
+              <div style="font-size: 0.75rem; color: var(--gt-text-muted); text-transform: uppercase;">Process Uptime</div>
+              <div style="font-size: 1.1rem; font-weight: 700;" id="sysUptime">0s</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Mini Live Console Preview -->
+        <div class="gt-panel" style="margin-top: 16px;">
+          <div class="gt-panel-title" style="display: flex; justify-content: space-between;">
+            <span>💻 Live Server Console Preview</span>
+            <button class="gt-btn gt-btn-sm" onclick="switchTab('console')">Open Full Terminal →</button>
+          </div>
+          <div id="miniTerminal" class="gt-terminal" style="height: 200px;">
+            Loading real-time logs...
+          </div>
+        </div>
+
+      </section>
+
+      <!-- TAB: LIVE CONSOLE -->
+      <section id="tab-console" class="tab-pane" style="display: none;">
+        <div class="gt-panel">
+          <div class="gt-panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>💻 Real-Time Terminal & Logs</span>
+            <div style="display: flex; gap: 8px;">
+              <button class="gt-btn gt-btn-sm gt-btn-tab" onclick="fetchLogs()">🔄 Refresh</button>
+              <button class="gt-btn gt-btn-sm gt-btn-tab" onclick="clearConsole()">🧹 Clear</button>
+              <button class="gt-btn gt-btn-sm" onclick="copyConsoleLogs()">📋 Copy Logs</button>
+            </div>
+          </div>
+
+          <!-- Terminal Output -->
+          <div id="fullTerminal" class="gt-terminal" style="height: 480px;">
+            Connecting to server log stream...
+          </div>
+
+          <!-- Interactive Command Prompt -->
+          <div style="display: flex; gap: 10px; margin-top: 14px;">
+            <input type="text" id="cmdInput" class="gt-input" placeholder="Type server command (e.g. /broadcast Welcome to GTPS Cloud! /sb ...)" onkeydown="handleCmdKeyDown(event)">
+            <button class="gt-btn gt-btn-green" onclick="sendConsoleCommand()">Send Command</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: PLAYER MANAGEMENT -->
+      <section id="tab-players" class="tab-pane" style="display: none;">
+        <div class="gt-panel">
+          <div class="gt-panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>👥 Player Database & Management</span>
+            <span id="playerTotalCounter" style="font-size: 0.9rem; color: var(--gt-btn-light);">Total: 0</span>
+          </div>
+
+          <!-- Filters Bar -->
+          <div style="display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px;">
+            <input type="text" id="playerSearchInput" class="gt-input" style="flex: 1; min-width: 220px;" placeholder="Search GrowID username..." oninput="debouncePlayerSearch()">
+            <select id="playerRoleFilter" class="gt-input" style="width: 160px;" onchange="loadPlayers(1)">
+              <option value="">All Roles</option>
+              <option value="admin">Administrators</option>
+              <option value="mod">Moderators</option>
+              <option value="vip">VIP / Donators</option>
+              <option value="banned">Banned Accounts</option>
+            </select>
+            <button class="gt-btn gt-btn-sm" onclick="loadPlayers(1)">🔍 Search</button>
+          </div>
+
+          <!-- Player Table -->
+          <div class="gt-table-wrapper">
+            <table class="gt-table">
+              <thead>
+                <tr>
+                  <th>GrowID</th>
+                  <th>Level</th>
+                  <th>Gems</th>
+                  <th>Role</th>
+                  <th>IP Address</th>
+                  <th>Last Online</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="playerTableBody">
+                <tr><td colspan="8" style="text-align: center; padding: 20px;">Loading player records...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px;">
+            <span id="playerPageInfo" style="font-size: 0.85rem; color: var(--gt-text-muted);">Page 1 of 1</span>
+            <div style="display: flex; gap: 8px;">
+              <button class="gt-btn gt-btn-sm gt-btn-tab" id="playerPrevBtn" onclick="changePlayerPage(-1)">← Prev</button>
+              <button class="gt-btn gt-btn-sm gt-btn-tab" id="playerNextBtn" onclick="changePlayerPage(1)">Next →</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: WORLD MANAGEMENT -->
+      <section id="tab-worlds" class="tab-pane" style="display: none;">
+        <div class="gt-panel">
+          <div class="gt-panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>🌍 World Database Explorer</span>
+            <span id="worldTotalCounter" style="font-size: 0.9rem; color: var(--gt-btn-light);">Total: 0</span>
+          </div>
+
+          <!-- Filters -->
+          <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+            <input type="text" id="worldSearchInput" class="gt-input" placeholder="Search world name (e.g. START, TRADE, CASINO)..." oninput="debounceWorldSearch()">
+            <button class="gt-btn gt-btn-sm" onclick="loadWorlds(1)">🔍 Search</button>
+          </div>
+
+          <!-- World Table -->
+          <div class="gt-table-wrapper">
+            <table class="gt-table">
+              <thead>
+                <tr>
+                  <th>World Name</th>
+                  <th>World Owner</th>
+                  <th>Weather</th>
+                  <th>Lock Status</th>
+                  <th>Dropped Items</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="worldTableBody">
+                <tr><td colspan="6" style="text-align: center; padding: 20px;">Loading worlds...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 14px;">
+            <span id="worldPageInfo" style="font-size: 0.85rem; color: var(--gt-text-muted);">Page 1 of 1</span>
+            <div style="display: flex; gap: 8px;">
+              <button class="gt-btn gt-btn-sm gt-btn-tab" id="worldPrevBtn" onclick="changeWorldPage(-1)">← Prev</button>
+              <button class="gt-btn gt-btn-sm gt-btn-tab" id="worldNextBtn" onclick="changeWorldPage(1)">Next →</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: GUILDS / CLANS -->
+      <section id="tab-guilds" class="tab-pane" style="display: none;">
+        <div class="gt-panel">
+          <div class="gt-panel-title">
+            <span>🛡️ Guilds & Clans</span>
+          </div>
+          <div class="gt-table-wrapper">
+            <table class="gt-table">
+              <thead>
+                <tr>
+                  <th>Guild Name</th>
+                  <th>Leader / Owner</th>
+                  <th>Guild Level</th>
+                  <th>Members Count</th>
+                  <th>Guild Statement</th>
+                </tr>
+              </thead>
+              <tbody id="guildTableBody">
+                <tr><td colspan="5" style="text-align: center; padding: 20px;">Loading guilds...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: LUA SCRIPTS -->
+      <section id="tab-scripts" class="tab-pane" style="display: none;">
+        <div class="gt-panel">
+          <div class="gt-panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>📜 Lua Script & Command Editor</span>
+            <div style="display: flex; gap: 8px;">
+              <button class="gt-btn gt-btn-yellow gt-btn-sm" onclick="createNewScript()">➕ Add New Lua</button>
+              <button class="gt-btn gt-btn-green gt-btn-sm" onclick="saveActiveScript()">💾 Save Script</button>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 240px 1fr; gap: 14px; margin-top: 10px;">
+            <!-- Script File Tree -->
+            <div style="background: rgba(0,0,0,0.3); border: 2px solid var(--gt-border-fade-35); border-radius: 8px; padding: 10px; max-height: 480px; overflow-y: auto;">
+              <div style="font-size: 0.8rem; color: var(--gt-text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">Script Files</div>
+              <div id="scriptFileList" style="display: flex; flex-direction: column; gap: 4px;">
+                <!-- Dynamically populated -->
+              </div>
+            </div>
+
+            <!-- In-browser Code Editor -->
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--gt-btn-light);" id="currentEditingFile">
+                Select a script from the list to edit
+              </div>
+              <textarea id="scriptCodeEditor" class="gt-input" style="font-family: var(--font-mono); height: 440px; resize: vertical; line-height: 1.5; font-size: 0.88rem;" spellcheck="false" placeholder="-- Lua Script Content..."></textarea>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: SERVER CONFIG & SETTINGS -->
+      <section id="tab-configs" class="tab-pane" style="display: none;">
+        <div class="gt-panel">
+          <div class="gt-panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>⚙️ Server Settings & Configuration</span>
+            <div style="display: flex; gap: 8px;">
+              <button class="gt-btn gt-btn-sm gt-btn-tab active" id="btnSubTabVisual" onclick="switchConfigSubTab('visual')">🛠 Visual Form Settings</button>
+              <button class="gt-btn gt-btn-sm gt-btn-tab" id="btnSubTabRaw" onclick="switchConfigSubTab('raw')">📄 Raw JSON Files</button>
+            </div>
+          </div>
+
+          <!-- SUB-TAB 1: VISUAL FORM SETTINGS -->
+          <div id="cfgSubTabVisual" style="display: block; margin-top: 14px;">
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px;">
+              
+              <!-- Card 1: General Server Info -->
+              <div style="background: var(--gt-border-fade-12); border: 2px solid var(--gt-border-fade-35); border-radius: 10px; padding: 16px;">
+                <h4 style="font-size: 1rem; color: #fff; margin-bottom: 12px;">🌐 General Server Identity</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div>
+                    <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Server Name</label>
+                    <input type="text" id="cfgServerName" class="gt-input" placeholder="PyRock">
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                      <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Client Version</label>
+                      <input type="text" id="cfgClientVer" class="gt-input" placeholder="5.45">
+                    </div>
+                    <div>
+                      <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Protocol Version</label>
+                      <input type="number" id="cfgProtocol" class="gt-input" placeholder="216">
+                    </div>
+                  </div>
+                  <div>
+                    <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Discord Invite URL</label>
+                    <input type="text" id="cfgDiscordUrl" class="gt-input" placeholder="https://discord.gg/...">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Website URL</label>
+                    <input type="text" id="cfgWebsiteUrl" class="gt-input" placeholder="https://...">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 2: Gameplay & Protections -->
+              <div style="background: var(--gt-border-fade-12); border: 2px solid var(--gt-border-fade-35); border-radius: 10px; padding: 16px;">
+                <h4 style="font-size: 1rem; color: #fff; margin-bottom: 12px;">🎮 Gameplay & Protections</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: var(--gt-border-fade-20); padding: 8px 12px; border-radius: 6px;">
+                    <span>🛡️ Anti-Proxy Protection</span>
+                    <input type="checkbox" id="cfgAntiProxy" style="width: 18px; height: 18px;">
+                  </label>
+                  <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: var(--gt-border-fade-20); padding: 8px 12px; border-radius: 6px;">
+                    <span>🚫 Anti-Growlauncher</span>
+                    <input type="checkbox" id="cfgAntiGrowlauncher" style="width: 18px; height: 18px;">
+                  </label>
+                  <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: var(--gt-border-fade-20); padding: 8px 12px; border-radius: 6px;">
+                    <span>🌙 Shadow Farm System</span>
+                    <input type="checkbox" id="cfgShadowFarmEnable" style="width: 18px; height: 18px;">
+                  </label>
+                  <div>
+                    <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Auto-Farm Delay (ms)</label>
+                    <input type="number" id="cfgAutofarmDelay" class="gt-input" placeholder="500">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 3: Starter Rewards -->
+              <div style="background: var(--gt-border-fade-12); border: 2px solid var(--gt-border-fade-35); border-radius: 10px; padding: 16px;">
+                <h4 style="font-size: 1rem; color: #fff; margin-bottom: 12px;">🎁 Starter Pack & Shop Rates</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <div>
+                    <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Newbie Starting Gems 💎</label>
+                    <input type="number" id="cfgStarterGems" class="gt-input" placeholder="50000">
+                  </div>
+                  <div>
+                    <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Shop Buy Price (Gems)</label>
+                    <input type="number" id="cfgShopGemsPrice" class="gt-input" placeholder="9990">
+                  </div>
+                </div>
+              </div>
+
+              <!-- Card 4: MySQL Database -->
+              <div style="background: var(--gt-border-fade-12); border: 2px solid var(--gt-border-fade-35); border-radius: 10px; padding: 16px;">
+                <h4 style="font-size: 1rem; color: #fff; margin-bottom: 12px;">🗄️ MySQL Database Link</h4>
+                <div style="display: flex; flex-direction: column; gap: 10px;">
+                  <label style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; background: var(--gt-border-fade-20); padding: 8px 12px; border-radius: 6px;">
+                    <span>⚡ Enable MySQL Mode</span>
+                    <input type="checkbox" id="cfgMysqlEnable" style="width: 18px; height: 18px;">
+                  </label>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                      <label style="font-size: 0.8rem; color: var(--gt-text-muted);">MySQL Host</label>
+                      <input type="text" id="cfgMysqlHost" class="gt-input" placeholder="127.0.0.1">
+                    </div>
+                    <div>
+                      <label style="font-size: 0.8rem; color: var(--gt-text-muted);">MySQL Port</label>
+                      <input type="number" id="cfgMysqlPort" class="gt-input" placeholder="3306">
+                    </div>
+                  </div>
+                  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                    <div>
+                      <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Database Name</label>
+                      <input type="text" id="cfgMysqlDB" class="gt-input" placeholder="gtps_db">
+                    </div>
+                    <div>
+                      <label style="font-size: 0.8rem; color: var(--gt-text-muted);">User</label>
+                      <input type="text" id="cfgMysqlUser" class="gt-input" placeholder="root">
+                    </div>
+                  </div>
+                  <div>
+                    <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Password</label>
+                    <input type="text" id="cfgMysqlPass" class="gt-input">
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- Active Command Toggles -->
+            <div style="background: var(--gt-border-fade-12); border: 2px solid var(--gt-border-fade-35); border-radius: 10px; padding: 16px; margin-top: 16px;">
+              <h4 style="font-size: 1rem; color: #fff; margin-bottom: 12px;">⚡ Active Server Commands (`cmdactive.json`)</h4>
+              <div id="cfgCommandsGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+                <!-- Command checkboxes dynamically populated -->
+              </div>
+            </div>
+
+            <!-- Form Action Button -->
+            <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+              <button class="gt-btn gt-btn-green" onclick="saveStructuredSettings()">💾 Save All Form Settings</button>
+            </div>
+
+          </div>
+
+          <!-- SUB-TAB 2: RAW JSON FILES -->
+          <div id="cfgSubTabRaw" style="display: none; margin-top: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+              <span style="font-size: 0.85rem; color: var(--gt-btn-light);" id="currentEditingConfig">Select a JSON config file from the list to edit</span>
+              <button class="gt-btn gt-btn-green gt-btn-sm" onclick="saveActiveConfig()">💾 Save JSON File</button>
+            </div>
+            <div style="display: grid; grid-template-columns: 240px 1fr; gap: 14px;">
+              <div style="background: rgba(0,0,0,0.3); border: 2px solid var(--gt-border-fade-35); border-radius: 8px; padding: 10px; max-height: 480px; overflow-y: auto;">
+                <div style="font-size: 0.8rem; color: var(--gt-text-muted); text-transform: uppercase; font-weight: 700; margin-bottom: 8px;">Config Files</div>
+                <div id="configFileList" style="display: flex; flex-direction: column; gap: 4px;"></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <textarea id="configCodeEditor" class="gt-input" style="font-family: var(--font-mono); height: 440px; resize: vertical; line-height: 1.5; font-size: 0.88rem;" spellcheck="false"></textarea>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- TAB: CLIENT CONNECTION -->
+      <section id="tab-connection" class="tab-pane" style="display: none;">
+        <div class="gt-panel">
+          <div class="gt-panel-title">
+            <span>🔌 Growtopia Client Connection Setup</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; margin-top: 10px;">
+            
+            <!-- Windows Hosts Setup -->
+            <div style="background: var(--gt-border-fade-12); padding: 18px; border-radius: 10px; border: 2px solid var(--gt-border-fade-35);">
+              <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 8px;">🪟 Windows PC Setup</h3>
+              <p style="font-size: 0.85rem; color: var(--gt-text-muted); margin-bottom: 12px;">Add this entry to <code>C:\Windows\System32\drivers\etc\hosts</code>:</p>
+              <textarea id="winHostsText" class="gt-input" style="font-family: var(--font-mono); height: 110px; font-size: 0.82rem;" readonly></textarea>
+              <button class="gt-btn gt-btn-sm" style="margin-top: 10px;" onclick="copyElementText('winHostsText')">📋 Copy Windows Hosts</button>
+            </div>
+
+            <!-- Android Setup -->
+            <div style="background: var(--gt-border-fade-12); padding: 18px; border-radius: 10px; border: 2px solid var(--gt-border-fade-35);">
+              <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 8px;">📱 Android Virtual Hosts Setup</h3>
+              <p style="font-size: 0.85rem; color: var(--gt-text-muted); margin-bottom: 12px;">Use PowerTunnel, Virtual Hosts, or Hosts Go app:</p>
+              <textarea id="androidHostsText" class="gt-input" style="font-family: var(--font-mono); height: 110px; font-size: 0.82rem;" readonly></textarea>
+              <button class="gt-btn gt-btn-sm" style="margin-top: 10px;" onclick="copyElementText('androidHostsText')">📋 Copy Android Hosts</button>
+            </div>
+
+            <!-- iOS & Proxy Setup -->
+            <div style="background: var(--gt-border-fade-12); padding: 18px; border-radius: 10px; border: 2px solid var(--gt-border-fade-35);">
+              <h3 style="font-size: 1.1rem; color: #fff; margin-bottom: 8px;">🍎 iOS GTProxy / Surge Setup</h3>
+              <p style="font-size: 0.85rem; color: var(--gt-text-muted); margin-bottom: 12px;">Configure DNS Cloak, Surge, or GTProxy with your server IP:</p>
+              <div style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 6px; font-family: var(--font-mono); font-size: 0.85rem;" id="iosDnsDisplay">
+                Target IP: 127.0.0.1<br>Port: 17091
+              </div>
+              <button class="gt-btn gt-btn-sm" style="margin-top: 10px;" onclick="copySidebarEndpoint()">📋 Copy IP & Port</button>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: BACKUPS -->
+      <section id="tab-backups" class="tab-pane" style="display: none;">
+        <div class="gt-panel">
+          <div class="gt-panel-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>💾 Server Database Backups</span>
+            <button class="gt-btn gt-btn-green gt-btn-sm" onclick="triggerManualBackup()">📦 Create New Backup (.zip)</button>
+          </div>
+
+          <div class="gt-table-wrapper" style="margin-top: 14px;">
+            <table class="gt-table">
+              <thead>
+                <tr>
+                  <th>Backup Archive Name</th>
+                  <th>Size</th>
+                  <th>Created Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="backupTableBody">
+                <tr><td colspan="4" style="text-align: center; padding: 20px;">Loading backups...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB: SECURITY & BANS -->
+      <section id="tab-security" class="tab-pane" style="display: none;">
+        <div class="gt-panel">
+          <div class="gt-panel-title">
+            <span>🔒 Security, Anti-Cheat & Ban Logs</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 10px;">
+            <div class="gt-stat-card">
+              <div class="gt-stat-icon">🚫</div>
+              <div class="gt-stat-info">
+                <span class="gt-stat-label">Banned Players</span>
+                <span class="gt-stat-value" id="secBannedCount">0</span>
+              </div>
+            </div>
+            <div class="gt-stat-card">
+              <div class="gt-stat-icon">🛡️</div>
+              <div class="gt-stat-info">
+                <span class="gt-stat-label">Server Staff / Admins</span>
+                <span class="gt-stat-value" id="secAdminCount">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top: 20px;">
+            <h4 style="font-size: 1rem; color: #fff; margin-bottom: 10px;">Banned Accounts Overview</h4>
+            <div class="gt-table-wrapper">
+              <table class="gt-table">
+                <thead>
+                  <tr>
+                    <th>GrowID</th>
+                    <th>IP Address</th>
+                    <th>Level</th>
+                    <th>Ban Reason / Details</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="bannedTableBody">
+                  <tr><td colspan="5" style="text-align: center; padding: 20px;">Loading ban records...</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- PLAYER EDIT MODAL -->
+  <div id="playerModalBackdrop" class="gt-modal-backdrop" style="display: none;" onclick="closeModalOnBackdrop(event, 'playerModalBackdrop')">
+    <div class="gt-modal" onclick="event.stopPropagation()">
+      <div class="gt-modal-header">
+        <div class="gt-modal-title" id="playerModalTitle">Edit Player: GROWID</div>
+        <div class="gt-modal-close" onclick="closePlayerModal()">✕</div>
+      </div>
+
+      <!-- Modal Tabs -->
+      <div class="gt-modal-tabs" style="padding: 10px 20px 0;">
+        <button class="gt-modal-tab-btn active" data-ptab="p-general" onclick="switchPlayerModalTab('p-general')">General</button>
+        <button class="gt-modal-tab-btn" data-ptab="p-economy" onclick="switchPlayerModalTab('p-economy')">Economy & Gems</button>
+        <button class="gt-modal-tab-btn" data-ptab="p-roles" onclick="switchPlayerModalTab('p-roles')">Roles & Rank</button>
+        <button class="gt-modal-tab-btn" data-ptab="p-inventory" onclick="switchPlayerModalTab('p-inventory')">Backpack Inventory</button>
+      </div>
+
+      <div class="gt-modal-body">
+        
+        <!-- P-TAB: GENERAL -->
+        <div id="ptab-p-general" class="p-tab-pane">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="font-size: 0.8rem; color: var(--gt-text-muted);">GrowID Name</label>
+              <input type="text" id="pEditName" class="gt-input" readonly>
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Password</label>
+              <input type="text" id="pEditPass" class="gt-input">
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Level</label>
+              <input type="number" id="pEditLevel" class="gt-input">
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Experience (XP)</label>
+              <input type="number" id="pEditXP" class="gt-input">
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; color: var(--gt-text-muted);">IP Address</label>
+              <input type="text" id="pEditIP" class="gt-input" readonly>
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; color: var(--gt-text-muted);">Email Address</label>
+              <input type="text" id="pEditEmail" class="gt-input">
+            </div>
+          </div>
+        </div>
+
+        <!-- P-TAB: ECONOMY -->
+        <div id="ptab-p-economy" class="p-tab-pane" style="display: none;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div>
+              <label style="font-size: 0.8rem; color: var(--gt-text-muted);">💎 Gems</label>
+              <input type="number" id="pEditGems" class="gt-input">
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; color: var(--gt-text-muted);">🔒 World Locks (WL)</label>
+              <input type="number" id="pEditWL" class="gt-input">
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; color: var(--gt-text-muted);">💎 Diamond Locks (DL)</label>
+              <input type="number" id="pEditDL" class="gt-input">
+            </div>
+            <div>
+              <label style="font-size: 0.8rem; color: var(--gt-text-muted);">🔷 Blue Gem Locks (BGL)</label>
+              <input type="number" id="pEditBGL" class="gt-input">
+            </div>
+          </div>
+        </div>
+
+        <!-- P-TAB: ROLES -->
+        <div id="ptab-p-roles" class="p-tab-pane" style="display: none;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="pEditRoleAdmin" style="width: 18px; height: 18px;"> Administrator
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="pEditRoleDev" style="width: 18px; height: 18px;"> Developer
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="pEditRoleMod" style="width: 18px; height: 18px;"> Moderator
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="pEditRoleVIP" style="width: 18px; height: 18px;"> VIP
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="pEditRoleSuperBoost" style="width: 18px; height: 18px;"> Super Boost
+            </label>
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+              <input type="checkbox" id="pEditRoleGod" style="width: 18px; height: 18px;"> God Role
+            </label>
+          </div>
+        </div>
+
+        <!-- P-TAB: INVENTORY -->
+        <div id="ptab-p-inventory" class="p-tab-pane" style="display: none;">
+          <div style="font-size: 0.82rem; color: var(--gt-text-muted); margin-bottom: 8px;">Backpack Inventory Slots:</div>
+          <div class="gt-inv-grid" id="playerInvSlots">
+            <!-- Inventory items -->
+          </div>
+        </div>
+
+      </div>
+
+      <div class="gt-modal-footer">
+        <button class="gt-btn gt-btn-red gt-btn-sm" onclick="togglePlayerBan()">🚫 Toggle Ban</button>
+        <button class="gt-btn gt-btn-tab gt-btn-sm" onclick="closePlayerModal()">Cancel</button>
+        <button class="gt-btn gt-btn-green" onclick="savePlayerModal()">💾 Save Changes</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer" class="gt-toast-container"></div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
